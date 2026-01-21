@@ -23,7 +23,7 @@ def create_chapter(chapter: ChapterCreate):
     """Create a new chapter"""
     # Verify course exists
     course_exists = (
-        supabase_client.table("courses")
+        supabase_client().table("courses")
         .select("id")
         .eq("id", str(chapter.course_id))
         .execute()
@@ -36,7 +36,7 @@ def create_chapter(chapter: ChapterCreate):
 
     # Check unique slug per course
     existing = (
-        supabase_client.table("chapters")
+        supabase_client().table("chapters")
         .select("id")
         .eq("course_id", str(chapter.course_id))
         .eq("slug", chapter.slug)
@@ -51,7 +51,7 @@ def create_chapter(chapter: ChapterCreate):
 
     data = chapter.model_dump()
     data["course_id"] = str(data["course_id"])
-    result = supabase_client.table("chapters").insert(data).execute()
+    result = supabase_client().table("chapters").insert(data).execute()
     
     if not result.data:
         raise HTTPException(status_code=500, detail="Failed to create chapter")
@@ -64,7 +64,7 @@ def list_chapters_by_course(course_id: uuid.UUID):
     """List all chapters for a course, ordered by position"""
     # Nested select: *, lessons(*)
     result = (
-        supabase_client.table("chapters")
+        supabase_client().table("chapters")
         .select("*, lessons(*)")
         .eq("course_id", str(course_id))
         .order("position", descending=False)
@@ -84,7 +84,7 @@ def list_chapters_by_course(course_id: uuid.UUID):
 def get_chapter(chapter_id: uuid.UUID):
     """Get chapter by ID with lessons"""
     result = (
-        supabase_client.table("chapters")
+        supabase_client().table("chapters")
         .select("*, lessons(*)")
         .eq("id", str(chapter_id))
         .limit(1)
@@ -111,7 +111,7 @@ def update_chapter(
     """Update chapter"""
     # Check existence
     existing = (
-        supabase_client.table("chapters")
+        supabase_client().table("chapters")
         .select("id")
         .eq("id", str(chapter_id))
         .execute()
@@ -125,7 +125,7 @@ def update_chapter(
     update_data = chapter_update.model_dump(exclude_unset=True)
     if not update_data:
         return (
-            supabase_client.table("chapters")
+            supabase_client().table("chapters")
             .select("*")
             .eq("id", str(chapter_id))
             .single()
@@ -134,7 +134,7 @@ def update_chapter(
         )
 
     result = (
-        supabase_client.table("chapters")
+        supabase_client().table("chapters")
         .update(update_data)
         .eq("id", str(chapter_id))
         .execute()
@@ -159,7 +159,7 @@ def reorder_chapters(reorder_data: ReorderChapters):
         )
         new_position = item["position"]
 
-        supabase_client.table("chapters").update({"position": new_position}).eq("id", chapter_id).execute()
+        supabase_client().table("chapters").update({"position": new_position}).eq("id", chapter_id).execute()
 
     return {"success": True, "message": "Chapters reordered"}
 
@@ -171,7 +171,7 @@ def delete_chapter(chapter_id: uuid.UUID):
     # If not, we might need to manually delete lessons first, but RDBMS usually handle this.
     
     result = (
-        supabase_client.table("chapters")
+        supabase_client().table("chapters")
         .delete()
         .eq("id", str(chapter_id))
         .execute()

@@ -18,7 +18,7 @@ def create_lesson(lesson: LessonCreate):
     """Create a new lesson"""
     # Verify chapter exists
     chapter_exists = (
-        supabase_client.table("chapters")
+        supabase_client().table("chapters")
         .select("id")
         .eq("id", str(lesson.chapter_id))
         .execute()
@@ -31,7 +31,7 @@ def create_lesson(lesson: LessonCreate):
 
     # Check unique slug
     existing = (
-        supabase_client.table("lessons")
+        supabase_client().table("lessons")
         .select("id")
         .eq("slug", lesson.slug)
         .execute()
@@ -54,7 +54,7 @@ def create_lesson(lesson: LessonCreate):
     if data.get("published_at"):
         data["published_at"] = data["published_at"].isoformat()
 
-    result = supabase_client.table("lessons").insert(data).execute()
+    result = supabase_client().table("lessons").insert(data).execute()
     
     if not result.data:
         raise HTTPException(status_code=500, detail="Failed to create lesson")
@@ -74,7 +74,7 @@ def create_lesson(lesson: LessonCreate):
 def list_lessons_by_chapter(chapter_id: uuid.UUID):
     """List all lessons for a chapter, ordered by position"""
     result = (
-        supabase_client.table("lessons")
+        supabase_client().table("lessons")
         .select("*")
         .eq("chapter_id", str(chapter_id))
         .order("position", descending=False)
@@ -92,7 +92,7 @@ def list_lessons_by_chapter(chapter_id: uuid.UUID):
 def get_lesson(lesson_id: uuid.UUID):
     """Get lesson by ID"""
     result = (
-        supabase_client.table("lessons")
+        supabase_client().table("lessons")
         .select("*")
         .eq("id", str(lesson_id))
         .single()
@@ -114,7 +114,7 @@ def get_lesson(lesson_id: uuid.UUID):
 def get_lesson_by_slug(slug: str):
     """Get lesson by slug"""
     result = (
-        supabase_client.table("lessons")
+        supabase_client().table("lessons")
         .select("*")
         .eq("slug", slug)
         .single()
@@ -139,7 +139,7 @@ def update_lesson(
     """Update lesson"""
     # Check existence
     existing = (
-        supabase_client.table("lessons")
+        supabase_client().table("lessons")
         .select("id")
         .eq("id", str(lesson_id))
         .execute()
@@ -163,7 +163,7 @@ def update_lesson(
          return get_lesson(lesson_id)
 
     result = (
-        supabase_client.table("lessons")
+        supabase_client().table("lessons")
         .update(update_data)
         .eq("id", str(lesson_id))
         .execute()
@@ -195,7 +195,7 @@ async def upload_lesson_content(
         # Upload (upsert=True to overwrite)
         # Try upload with upsert=true
         try:
-            res = supabase_client.storage.from_(bucket_name).upload(
+            res = supabase_client().storage.from_(bucket_name).upload(
                 path=file_path,
                 file=file_content,
                 file_options={"content-type": "text/markdown", "upsert": "true"}
@@ -204,7 +204,7 @@ async def upload_lesson_content(
             print(f"Upload with upsert failed, trying update: {storage_err}")
             # Fallback to update if upload failed (e.g. if file strictly exists)
             try:
-                res = supabase_client.storage.from_(bucket_name).update(
+                res = supabase_client().storage.from_(bucket_name).update(
                     path=file_path,
                     file=file_content,
                     file_options={"content-type": "text/markdown", "upsert": "true"}
@@ -214,7 +214,7 @@ async def upload_lesson_content(
                  raise HTTPException(status_code=500, detail=f"Storage save failed: {str(update_err)}")
 
         # Update DB 
-        supabase_client.table("lessons").update({"mdx_path": file_path}).eq("id", str(lesson_id)).execute()
+        supabase_client().table("lessons").update({"mdx_path": file_path}).eq("id", str(lesson_id)).execute()
 
         return {"success": True, "file_key": file_path, "lesson_id": lesson_id}
     except Exception as e:
@@ -243,7 +243,7 @@ async def upload_lesson_image(
         bucket_name = "lesson-images"
         
         # Upload
-        upload_res = supabase_client.storage.from_(bucket_name).upload(
+        upload_res = supabase_client().storage.from_(bucket_name).upload(
             path=file_path,
             file=file_content,
             file_options={"content-type": file.content_type, "upsert": "true"}
@@ -253,7 +253,7 @@ async def upload_lesson_image(
         # Note: If upload fails, it usually raises an exception, caught by except block.
 
         # Get public URL
-        public_url = supabase_client.storage.from_(bucket_name).get_public_url(file_path)
+        public_url = supabase_client().storage.from_(bucket_name).get_public_url(file_path)
         
         # Verify if it returns an object or string (new versions return string directly)
         if isinstance(public_url, dict):
@@ -273,7 +273,7 @@ async def upload_lesson_image(
 def get_lesson_content(lesson_id: uuid.UUID):
     """Get lesson MDX content from Supabase Storage"""
     result = (
-        supabase_client.table("lessons")
+        supabase_client().table("lessons")
         .select("mdx_path")
         .eq("id", str(lesson_id))
         .single()
@@ -293,7 +293,7 @@ def get_lesson_content(lesson_id: uuid.UUID):
 
     try:
         bucket_name = "lesson-content"
-        data = supabase_client.storage.from_(bucket_name).download(mdx_path)
+        data = supabase_client().storage.from_(bucket_name).download(mdx_path)
         content_str = data.decode('utf-8')
         return {"success": True, "content": content_str, "mdx_path": mdx_path}
     except Exception as e:
@@ -310,7 +310,7 @@ def reorder_lessons(reorder_data: ReorderLessons):
         lesson_id = str(item["id"]) if isinstance(item["id"], uuid.UUID) else item["id"]
         new_position = item["position"]
 
-        supabase_client.table("lessons").update({"position": new_position}).eq("id", lesson_id).execute()
+        supabase_client().table("lessons").update({"position": new_position}).eq("id", lesson_id).execute()
 
     return {"success": True, "message": "Lessons reordered"}
 
@@ -320,7 +320,7 @@ def delete_lesson(lesson_id: uuid.UUID):
     """Delete lesson"""
     # Get lesson first to get mdx_path for R2 deletion
     existing = (
-        supabase_client.table("lessons")
+        supabase_client().table("lessons")
         .select("mdx_path")
         .eq("id", str(lesson_id))
         .single()
@@ -337,7 +337,7 @@ def delete_lesson(lesson_id: uuid.UUID):
 
     # Delete from DB
     result = (
-        supabase_client.table("lessons")
+        supabase_client().table("lessons")
         .delete()
         .eq("id", str(lesson_id))
         .execute()

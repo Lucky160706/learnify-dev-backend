@@ -17,7 +17,7 @@ def create_course(course: CourseCreate):
     """Create a new course"""
     # Check if slug already exists
     existing = (
-        supabase_client.table("courses")
+        supabase_client().table("courses")
         .select("id")
         .eq("slug", course.slug)
         .execute()
@@ -30,7 +30,7 @@ def create_course(course: CourseCreate):
 
     # Insert
     data = course.model_dump()
-    result = supabase_client.table("courses").insert(data).execute()
+    result = supabase_client().table("courses").insert(data).execute()
     
     if not result.data:
         raise HTTPException(status_code=500, detail="Failed to create course")
@@ -41,7 +41,7 @@ def create_course(course: CourseCreate):
 @router.get("/", response_model=List[CourseWithChapters])
 def list_courses(skip: int = 0, limit: int = 100, status: str = None):
     """List all courses with chapters and lessons"""
-    query = supabase_client.table("courses").select("*, chapters(*, lessons(*))")
+    query = supabase_client().table("courses").select("*, chapters(*, lessons(*))")
 
     if status:
         query = query.eq("status", status)
@@ -71,7 +71,7 @@ def get_course(course_id: uuid.UUID):
     # Simple nested select: *, chapters(*, lessons(*))
     
     result = (
-        supabase_client.table("courses")
+        supabase_client().table("courses")
         .select("*, chapters(*, lessons(*))")
         .eq("id", str(course_id))
         .limit(1)
@@ -101,7 +101,7 @@ def get_course(course_id: uuid.UUID):
 def get_course_by_slug(slug: str):
     """Get course by slug with chapters"""
     result = (
-        supabase_client.table("courses")
+        supabase_client().table("courses")
         .select("*, chapters(*, lessons(*))")
         .eq("slug", slug)
         .limit(1)
@@ -132,7 +132,7 @@ def update_course(course_id: uuid.UUID, course_update: CourseUpdate):
     """Update course"""
     # Check existence
     existing = (
-        supabase_client.table("courses")
+        supabase_client().table("courses")
         .select("id")
         .eq("id", str(course_id))
         .execute()
@@ -147,7 +147,7 @@ def update_course(course_id: uuid.UUID, course_update: CourseUpdate):
     if not update_data:
         # Nothing to update, fetch and return
         return (
-            supabase_client.table("courses")
+            supabase_client().table("courses")
             .select("*")
             .eq("id", str(course_id))
             .single()
@@ -156,7 +156,7 @@ def update_course(course_id: uuid.UUID, course_update: CourseUpdate):
         )
 
     result = (
-        supabase_client.table("courses")
+        supabase_client().table("courses")
         .update(update_data)
         .eq("id", str(course_id))
         .execute()
@@ -172,7 +172,7 @@ def update_course(course_id: uuid.UUID, course_update: CourseUpdate):
 def delete_course(course_id: uuid.UUID):
     """Delete course"""
     result = (
-        supabase_client.table("courses")
+        supabase_client().table("courses")
         .delete()
         .eq("id", str(course_id))
         .execute()
