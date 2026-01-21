@@ -17,7 +17,7 @@ engine = create_engine(
     connect_args={
         "connect_timeout": 10,
         "options": "-c timezone=utc"
-    }
+    } 
 )
 
 # Session factory
