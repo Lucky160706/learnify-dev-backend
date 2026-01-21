@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     database_url: str = ""
 
     # CORS
-    allowed_origins: str = "http://localhost:3000", "https://learnify-dev-rosy.vercel.app"
+    allowed_origins: list[str] = ["http://localhost:3000", "https://learnify-dev-rosy.vercel.app"] 
 
     class Config:
         env_file = env_path if os.path.exists(env_path) else None
