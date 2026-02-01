@@ -25,6 +25,8 @@ allowed_origins = [
     "http://0.0.0.0:3000",
     "http://0.0.0.0:5173",
     "https://learnify-dev-rosy.vercel.app",
+    "https://www.learnify.live",
+    "https://learnify.live"
 ]
 
 app.add_middleware(
