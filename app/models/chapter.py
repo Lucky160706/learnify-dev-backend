@@ -35,6 +35,8 @@ class Chapter(Base):
     lessons = relationship(
         "Lesson", back_populates="chapter", cascade="all, delete-orphan"
     )
+    quiz = relationship("Quiz", back_populates="chapter", uselist=False)
+
 
     # Unique constraint
     __table_args__ = (

@@ -25,3 +25,4 @@ class Course(Base):
     chapters = relationship(
         "Chapter", back_populates="course", cascade="all, delete-orphan"
     )
+    quiz = relationship("Quiz", back_populates="course", uselist=False, cascade="all, delete-orphan")
